@@ -1,0 +1,53 @@
+name: Build flask app to Dev
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Devops-Task/Microservices/**'     
+
+permissions:
+  contents: "read"
+  id-token: "write"   
+
+env:
+  DOCKER_IMAGE: ${{ vars.DOCKER_REPOSITORY }}/flask-app
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth 
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token  
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_DEV }}
+          service_account: ${{ secrets.SA_EMAIL_DEV }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Docker Login to GAR
+        uses: docker/login-action@v3
+        with:
+          registry: europe-west1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}  
+
+      - name: Build Docker Image
+        working-directory: ./Devops-Task/Microservices
+        run: |
+          docker build -t $DOCKER_IMAGE:$GITHUB_SHA .
+
+      - name: Push Docker Image
+        run: |
+          docker push $DOCKER_IMAGE:$GITHUB_SHA
+
+      - name: Tag Docker Image
+        run: |
+          gcloud container images add-tag $DOCKER_IMAGE:${{ github.sha }} $DOCKER_IMAGE:latest 

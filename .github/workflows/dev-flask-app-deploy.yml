@@ -1,0 +1,80 @@
+name: Deploy flask app to Dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        required: true
+        description: Release Tag
+        default: "latest"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      id-token: write
+    environment: dev
+    outputs:
+      version: ${{ steps.deploy.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_DEV }}
+          service_account: ${{ secrets.SA_EMAIL_DEV }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Uncomment to fetch secrets from GCP Secret Manager and convert to K8s Secret
+      # - name: Add secrets.yaml
+      #   run: |
+      #     gcloud secrets versions access latest --secret="dev-flask-app-env" > .env
+      #     python dotenv-to-secrets.py --env .env --name dev-flask-app-env > Devops-Task/Infra/k8s/dev/secrets.yaml
+
+      - name: Setup kubectl
+        run: |
+          gcloud components install gke-gcloud-auth-plugin kubectl
+
+      - name: Authenticate to Kubernetes cluster
+        run: |
+          gcloud container clusters get-credentials flask-app --zone us-central1-c --project ${{ vars.PROJECT_ID }}
+
+      - name: Deploy to Kubernetes
+        id: deploy
+        working-directory: Devops-Task/Infra/k8s/dev
+        run: |
+          # Set namespace to dev
+          kubectl config set-context --current --namespace=dev
+          
+          # Update image tag in deployment
+          sed -E -i "s/dev:[0-9]+(\.[a-z|A-Z|0-9|-]+)+$/dev:${{ github.event.inputs.tag }}/g" deployment.yml
+          
+          # Apply namespace
+          kubectl apply -f namespace.yml
+          
+          # Apply service account
+          kubectl apply -f sa.yml
+          
+          # Apply secrets (if using GCP Secret Manager, uncomment the secrets step above)
+          # kubectl apply -f secrets.yaml
+          
+          # Apply deployment
+          kubectl apply -f deployment.yml
+          
+          # Apply service
+          kubectl apply -f service.yml
+          
+          # Apply ingress
+          kubectl apply -f ingress.yml
+          
+          # Apply certificate
+          kubectl apply -f cert.yml
+
+          echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT

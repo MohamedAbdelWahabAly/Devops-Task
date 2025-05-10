@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: flask-app
+    namespace: dev
+    labels:
+        tag: latest
+spec:
+    replicas: 2
+    selector:
+        matchLabels:
+            app: flask-app
+    template:
+        metadata:
+            labels:
+                app: flask-app
+        spec:
+            serviceAccountName: flask-app
+            containers:
+                - name: flask-app
+                  image: us-central1-docker.pkg.dev/flask-app-devops-task/flask-app/flask:1.0.0
+                  imagePullPolicy: IfNotPresent
+                  envFrom:
+                      - secretRef:
+                            name: dev-flask-app-env
+                  ports:
+                      - containerPort: 5000
+                  resources:
+                      requests:
+                          cpu: 250m
+                          memory: 256Mi
+                      limits:
+                          cpu: 500m
+                          memory: 512Mi
+                  readinessProbe:
+                      httpGet:
+                          path: /health
+                          port: 5000
+                      initialDelaySeconds: 5
+                      periodSeconds: 5
+                  livenessProbe:
+                      httpGet:
+                          path: /health
+                          port: 5000
+                      initialDelaySeconds: 30
+                      periodSeconds: 10

@@ -1,0 +1,50 @@
+name: Terraform Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment dev"
+        required: true
+        type: string
+
+jobs:
+  terraform:
+    name: Terraform Plan and Apply
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      id-token: write
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_DEV }}
+          service_account: ${{ secrets.SA_EMAIL_DEV }}
+
+      - name: Initialize Terraform
+        working-directory: terraform/${{ github.event.inputs.environment }}
+        run: terraform init
+
+      - name: Terraform Plan
+        id: terraform-plan
+        working-directory: terraform/${{ github.event.inputs.environment }}
+        run: terraform plan -out=tfplan
+
+      - name: Request Approval
+        if: success()
+        uses: hmarr/auto-approve-action@v4
+        with:
+          approval_comment: |
+            A Terraform plan has been generated for the ${{ github.event.inputs.environment }} environment.
+            Please review the plan and approve to proceed with applying the changes.
+
+      - name: Terraform Apply
+        if: success()
+        working-directory: terraform/${{ github.event.inputs.environment }}
+        run: terraform apply tfplan
