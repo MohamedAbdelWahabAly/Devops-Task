@@ -46,5 +46,5 @@ jobs:
 
       - name: Terraform Apply
         if: success()
-        working-directory: Infraterraform/${{ github.event.inputs.environment }}
+        working-directory: Infra/terraform/${{ github.event.inputs.environment }}
         run: terraform apply tfplan
