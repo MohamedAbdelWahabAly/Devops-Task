@@ -28,12 +28,12 @@ jobs:
           service_account: ${{ secrets.SA_EMAIL_DEV }}
 
       - name: Initialize Terraform
-        working-directory: terraform/${{ github.event.inputs.environment }}
+        working-directory: Infra/terraform/${{ github.event.inputs.environment }}
         run: terraform init
 
       - name: Terraform Plan
         id: terraform-plan
-        working-directory: terraform/${{ github.event.inputs.environment }}
+        working-directory: Infra/terraform/${{ github.event.inputs.environment }}
         run: terraform plan -out=tfplan
 
       - name: Request Approval
@@ -46,5 +46,5 @@ jobs:
 
       - name: Terraform Apply
         if: success()
-        working-directory: terraform/${{ github.event.inputs.environment }}
+        working-directory: Infraterraform/${{ github.event.inputs.environment }}
         run: terraform apply tfplan
