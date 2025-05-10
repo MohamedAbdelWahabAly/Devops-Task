@@ -3,9 +3,7 @@ variable "project_id" {
   type        = string
   default     = "flask-app-devops-task"
 }
-# variable "project_name" {
-#   default = "Flask App"
-# }
+
 
 variable "region" {
   default = "us-central1"

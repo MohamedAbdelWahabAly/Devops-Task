@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'Devops-Task/Microservices/**'     
+      - 'app/**'     
 
 permissions:
   contents: "read"

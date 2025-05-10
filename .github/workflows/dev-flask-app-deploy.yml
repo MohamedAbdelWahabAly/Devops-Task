@@ -48,7 +48,7 @@ jobs:
 
       - name: Deploy to Kubernetes
         id: deploy
-        working-directory: Devops-Task/Infra/k8s/dev
+        working-directory: Infra/k8s/dev
         run: |
           # Set namespace to dev
           kubectl config set-context --current --namespace=dev
