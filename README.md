@@ -29,7 +29,7 @@ This project demonstrates:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/MohamedAbdelWahabAly/Devops-Task.git
 cd Devops-Task
 ```
 
